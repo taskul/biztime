@@ -2,11 +2,19 @@ const express = require('express');
 const router = express.Router();
 const ExpressError = require('../expressError');
 const db = require('../db');
+const slugify = require('slugify');
 
 // get all companies
 router.get('/', async (req, res, next) => {
     try {
-        const results = await db.query('SELECT * FROM companies')
+        const results = await db.query(`
+        SELECT c.code, c.name, c.description, i.ind_code, i.ind_name
+        FROM companies AS c
+        LEFT JOIN comp_industries AS comp_i
+        ON c.code = comp_i.c_code
+        LEFT JOIN industries AS i
+        ON comp_i.i_code = i.ind_code
+        `)
         return res.status(200).json({ companies: results.rows })
     } catch (e) {
         return next(e)
@@ -38,8 +46,16 @@ router.get('/:id', async (req, res, next) => {
 // add new company to the companies db
 router.post('/', async (req, res, next) => {
     try {
-        const { code, name, description } = req.body;
-        const results = await db.query('INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING code, name, description', [code, name, description]);
+        const { name, description } = req.body;
+        const comp_code = slugify(name, {
+            replacement: '_',  // replace spaces with replacement character, defaults to `-`
+            remove: undefined, // remove characters that match regex, defaults to `undefined`
+            lower: true,      // convert to lower case, defaults to `false`
+            strict: false,     // strip special characters except replacement, defaults to `false`
+            locale: 'vi',      // language code of the locale to use
+            trim: true         // trim leading and trailing replacement chars, defaults to `true`
+        })
+        const results = await db.query('INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING code, name, description', [comp_code, name, description]);
         return res.status(201).json({ company: results.rows[0] })
     } catch (e) {
         return next(e)

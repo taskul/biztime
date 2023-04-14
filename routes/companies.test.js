@@ -9,19 +9,40 @@ const db = require('../db');
 
 let company;
 let invoice;
+let industry;
 const muscleTech = { code: "muscletech", name: "MuscleTech", description: "Leader in supplement innovation" };
 
 beforeEach(async () => {
-    const compResult = await db.query(`INSERT INTO companies (code, name, description) VALUES ('atari', 'Atari', 'video game OG') RETURNING code, name, description`)
-    const invoiceResult = await db.query(`INSERT INTO invoices (comp_code, amt) VALUES ('atari', '2000') RETURNING id, comp_code, amt, paid, add_date, paid_date`)
+    const compResult = await db.query(`
+        INSERT INTO companies (code, name, description) 
+        VALUES ('atari', 'Atari', 'video game OG') 
+        RETURNING code, name, description
+        `)
+    const invoiceResult = await db.query(`
+        INSERT INTO invoices (comp_code, amt, paid, add_date, paid_date) 
+        VALUES ('atari', '2000', false, '2020-01-01', null) 
+        RETURNING id, comp_code, amt, paid, add_date, paid_date`)
+    const industryResults = await db.query(`
+        INSERT INTO industries (ind_code, ind_name) 
+        VALUES ('tech', 'Technology')
+        RETURNING ind_code, ind_name
+        `)
+    const compIndRelation = await db.query(`
+        INSERT INTO comp_industries (c_code, i_code)
+        VALUES ('atari', 'tech')
+        RETURNING c_code, i_code
+        `)
     company = compResult.rows[0];
     invoice = invoiceResult.rows[0];
+    industry = industryResults.rows[0]
 })
 
 afterEach(async () => {
     // await db.query('DELETE FROM companies JOIN invoices ON companies.code = invoices.comp_code WHERE company.code = "atari"')
     await db.query('DELETE FROM companies')
-        .then(await db.query('DELETE FROM invoices'))
+    await db.query('DELETE FROM invoices')
+    await db.query('DELETE FROM industries')
+    await db.query('DELETE FROM comp_industries')
 })
 
 afterAll(async () => {
@@ -32,7 +53,9 @@ describe('GET /companies', () => {
     test('Get a list of companies', async () => {
         const response = await request(app).get('/companies');
         expect(response.statusCode).toBe(200);
-        expect(response.body).toEqual({ companies: [company] })
+        const { code, name, description } = company;
+        const { ind_code, ind_name } = industry;
+        expect(response.body).toEqual({ companies: [{ code, name, description, ind_code, ind_name }] });
     });
 })
 

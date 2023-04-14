@@ -15,6 +15,10 @@ app.use('/companies', companyRoutes);
 const invoicesRoutes = require('./routes/invoices');
 app.use('/invoices', invoicesRoutes)
 
+// set industry routes
+const industryRoutes = require('./routes/industries');
+app.use('/industries', industryRoutes)
+
 /** 404 handler */
 app.use(function (req, res, next) {
   const err = new ExpressError("Not Found", 404);

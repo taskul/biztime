@@ -1,7 +1,7 @@
 -- seed file with command
 -- psql < data.sql
 
-\c biztime
+\c biztime_test
 
 DROP TABLE IF EXISTS invoices
 CASCADE;
@@ -34,8 +34,8 @@ CREATE TABLE industries (
 );
 
 CREATE TABLE comp_industries (
-  c_code text NOT NULL REFERENCES companies,
-  i_code text NOT NULL REFERENCES industries,
+  c_code text NOT NULL REFERENCES companies ON DELETE CASCADE,
+  i_code text NOT NULL REFERENCES industries ON DELETE CASCADE,
   PRIMARY KEY(c_code, i_code)
 );
 
